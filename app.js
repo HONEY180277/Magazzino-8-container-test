@@ -175,8 +175,9 @@ $("materials").onclick = e => {
 $("containers").onclick = e => { const card = e.target.closest("[data-container]"); if (card) showContainer(card.dataset.container); };
 $("containers").onkeydown = e => { if (e.key !== "Enter" && e.key !== " ") return; const card = e.target.closest(".container-card"); if (card) { e.preventDefault(); showContainer(card.dataset.container); } };
 function runSearch() {
-  if (containerView) setScreen("materials");
-  else { selectedContainer = ""; render(); $("materials-section").scrollIntoView({behavior:"smooth",block:"start"}); }
+  // Mostra la schermata Materiali e i risultati anche quando la ricerca parte dalla HOME.
+  setScreen("materials");
+  $("materials-section").scrollIntoView({behavior:"smooth",block:"start"});
 }
 $("searchBtn").onclick = runSearch;
 $("search").addEventListener("keydown",e => { if (e.key === "Enter") runSearch(); });
