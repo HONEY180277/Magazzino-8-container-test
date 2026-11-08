@@ -1,5 +1,5 @@
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+
 import {
   getAuth,
   onAuthStateChanged,
@@ -18,7 +18,8 @@ import {
   orderBy,
   limit,
   serverTimestamp,
-  enableIndexedDbPersistence
+  enableIndexedDbPersistence,
+  runTransaction
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 import { firebaseConfig } from "./firebase-config.js";
@@ -27,6 +28,7 @@ const $ = id => document.getElementById(id);
 const status = $("status");
 
 const extraStyle = document.createElement("style");
+
 extraStyle.textContent = `
   .hidden { display:none !important; }
 
@@ -71,15 +73,14 @@ extraStyle.textContent = `
     border:2px solid #27351f;
     border-radius:4px;
     overflow:hidden;
-    background:
-      repeating-linear-gradient(
-        90deg,
-        #78864b 0px,
-        #78864b 5px,
-        #56683a 6px,
-        #87935a 8px,
-        #465832 10px
-      );
+    background:repeating-linear-gradient(
+      90deg,
+      #78864b 0px,
+      #78864b 5px,
+      #56683a 6px,
+      #87935a 8px,
+      #465832 10px
+    );
     box-shadow:
       inset 0 5px 8px rgba(255,255,255,.22),
       inset 0 -7px 9px rgba(0,0,0,.25),
@@ -91,14 +92,13 @@ extraStyle.textContent = `
     content:"";
     position:absolute;
     inset:0;
-    background:
-      repeating-linear-gradient(
-        90deg,
-        transparent 0 17px,
-        rgba(25,35,20,.35) 18px,
-        rgba(255,255,255,.18) 20px,
-        transparent 22px
-      );
+    background:repeating-linear-gradient(
+      90deg,
+      transparent 0 17px,
+      rgba(25,35,20,.35) 18px,
+      rgba(255,255,255,.18) 20px,
+      transparent 22px
+    );
   }
 
   .container-art:after {
@@ -186,6 +186,9 @@ extraStyle.textContent = `
   .container-action {
     width:100%;
     margin-bottom:10px;
+    min-height:43px;
+    border-radius:9px;
+    font-weight:700;
   }
 
   .container-back {
@@ -210,33 +213,53 @@ extraStyle.textContent = `
     margin:8px 0;
   }
 
+  button:focus-visible,
+  .container-card:focus-visible {
+    outline:3px solid #e5b942;
+    outline-offset:3px;
+  }
+
   @media(max-width:380px) {
     .container-card { min-height:165px; }
     .container-art { height:60px; }
   }
 `;
+
 document.head.appendChild(extraStyle);
 
-let app, auth, db;
+let app;
+let auth;
+let db;
+
 let materials = [];
 let movements = [];
-let unsubM, unsubH;
+
+let unsubM;
+let unsubH;
+
 let selectedContainer = "";
 let containerView = false;
 let historyVisible = false;
 
 const show = id => {
-  ["auth", "pin", "app"].forEach(x =>
-    $(x).classList.toggle("hidden", x !== id)
-  );
+  ["auth", "pin", "app"].forEach(x => {
+    const element = $(x);
+    if (element) {
+      element.classList.toggle("hidden", x !== id);
+    }
+  });
 };
 
 show("auth");
 
-const configured = !firebaseConfig.apiKey.startsWith("INSERISCI");
+const configured =
+  firebaseConfig &&
+  firebaseConfig.apiKey &&
+  !firebaseConfig.apiKey.startsWith("INSERISCI");
 
 if (!configured) {
   status.textContent = "Configura prima firebase-config.js";
+
   $("authmsg").textContent =
     "Il file firebase-config.js contiene ancora i valori segnaposto.";
 } else {
@@ -257,6 +280,8 @@ if (!configured) {
   });
 }
 
+/* ACCESSO */
+
 $("login").onclick = async () => {
   try {
     await signInWithEmailAndPassword(
@@ -264,6 +289,7 @@ $("login").onclick = async () => {
       $("email").value.trim(),
       $("password").value
     );
+
     $("authmsg").textContent = "Accesso riuscito.";
   } catch (e) {
     $("authmsg").textContent =
@@ -271,10 +297,13 @@ $("login").onclick = async () => {
   }
 };
 
+/* PIN */
+
 function startPin() {
   const saved = localStorage.getItem("magazzino_pin_v1");
 
   $("pin2").classList.toggle("hidden", !!saved);
+
   $("pintitle").textContent = saved
     ? "Inserisci il PIN"
     : "Crea il PIN del magazzino";
@@ -324,38 +353,54 @@ function openApp() {
   render();
 }
 
+/* DATI FIREBASE */
+
 function listen() {
   if (unsubM) unsubM();
   if (unsubH) unsubH();
 
   unsubM = onSnapshot(
     collection(db, "materials"),
-    s => {
-      materials = s.docs.map(d => ({
+    snapshot => {
+      materials = snapshot.docs.map(d => ({
         id: d.id,
         ...d.data()
       }));
+
       render();
     },
-    e => status.textContent = "Errore materiali: " + e.message
+    error => {
+      status.textContent =
+        "Errore materiali: " + error.message;
+    }
   );
 
-  const q = query(
+  const movementsQuery = query(
     collection(db, "movements"),
     orderBy("createdAt", "desc"),
     limit(50)
   );
 
-  unsubH = onSnapshot(q, s => {
-    movements = s.docs.map(d => ({
-      id: d.id,
-      ...d.data()
-    }));
-    renderMovements();
-  }, () => {});
+  unsubH = onSnapshot(
+    movementsQuery,
+    snapshot => {
+      movements = snapshot.docs.map(d => ({
+        id: d.id,
+        ...d.data()
+      }));
+
+      renderMovements();
+    },
+    error => {
+      status.textContent =
+        "Errore storico: " + error.message;
+    }
+  );
 }
 
 const val = id => $(id).value.trim();
+
+/* SALVATAGGIO MATERIALE */
 
 $("save").onclick = async () => {
   if (!val("name")) {
@@ -363,10 +408,17 @@ $("save").onclick = async () => {
     return;
   }
 
+  const quantity = Number(val("qty") || 0);
+
+  if (!Number.isFinite(quantity) || quantity < 0) {
+    alert("Inserisci una quantità valida e non negativa.");
+    return;
+  }
+
   const data = {
     name: val("name"),
     code: val("code"),
-    quantity: Number(val("qty") || 0),
+    quantity,
     unit: val("unit"),
     container: val("container"),
     zone: val("zone"),
@@ -384,10 +436,15 @@ $("save").onclick = async () => {
       await updateDoc(doc(db, "materials", id), data);
     } else {
       data.createdAt = serverTimestamp();
-      await addDoc(collection(db, "materials"), data);
+
+      await addDoc(
+        collection(db, "materials"),
+        data
+      );
     }
 
     clearForm();
+
     if (containerView) {
       $("formtitle").parentElement.classList.add("hidden");
     }
@@ -398,9 +455,19 @@ $("save").onclick = async () => {
 
 function clearForm() {
   [
-    "docid", "name", "code", "qty", "unit",
-    "zone", "box", "shelf", "rack", "notes"
-  ].forEach(x => $(x).value = "");
+    "docid",
+    "name",
+    "code",
+    "qty",
+    "unit",
+    "zone",
+    "box",
+    "shelf",
+    "rack",
+    "notes"
+  ].forEach(id => {
+    $(id).value = "";
+  });
 
   $("formtitle").textContent = "Aggiungi materiale";
   $("cancel").classList.add("hidden");
@@ -408,62 +475,120 @@ function clearForm() {
 
 $("cancel").onclick = clearForm;
 
+/* MODIFICA MATERIALE */
+
 function edit(m) {
   $("docid").value = m.id;
 
   [
-    "name", "code", "qty", "unit", "container",
-    "zone", "box", "shelf", "rack", "notes"
-  ].forEach(k => $(k).value = m[k] ?? "");
+    "name",
+    "code",
+    "qty",
+    "unit",
+    "container",
+    "zone",
+    "box",
+    "shelf",
+    "rack",
+    "notes"
+  ].forEach(key => {
+    $(key).value = m[key] ?? "";
+  });
 
   $("formtitle").textContent = "Modifica materiale";
   $("cancel").classList.remove("hidden");
 
   $("formtitle").parentElement.classList.remove("hidden");
+
   $("formtitle").scrollIntoView({
-    behavior:"smooth",
-    block:"start"
+    behavior: "smooth",
+    block: "start"
   });
 }
 
+/* CARICO E SCARICO */
+
 async function move(m, delta) {
-  const amount = Number(
-    prompt("Quantità da " + (delta > 0 ? "caricare" : "scaricare") + ":")
+  const action = delta > 0 ? "caricare" : "scaricare";
+
+  const answer = prompt(
+    "Quantità da " + action + ":"
   );
 
-  if (!Number.isFinite(amount) || amount <= 0) return;
+  if (answer === null) return;
 
-  if (delta < 0 && amount > Number(m.quantity || 0)) {
-    alert("Quantità insufficiente.");
+  const amount = Number(answer.replace(",", "."));
+
+  if (!Number.isFinite(amount) || amount <= 0) {
+    alert("Inserisci una quantità valida.");
+    return;
+  }
+
+  const currentQuantity = Number(m.quantity || 0);
+
+  if (delta < 0 && amount > currentQuantity) {
+    alert("Quantità insufficiente. Disponibili: " + currentQuantity);
     return;
   }
 
   try {
-    await updateDoc(doc(db, "materials", m.id), {
-      quantity: Number(m.quantity || 0) + delta * amount,
-      updatedAt: serverTimestamp()
+    const materialRef = doc(db, "materials", m.id);
+    const movementRef = doc(collection(db, "movements"));
+
+    await runTransaction(db, async transaction => {
+      const materialSnapshot =
+        await transaction.get(materialRef);
+
+      if (!materialSnapshot.exists()) {
+        throw new Error("Materiale non trovato.");
+      }
+
+      const current = materialSnapshot.data();
+      const actualQuantity = Number(current.quantity || 0);
+      const newQuantity = actualQuantity + delta * amount;
+
+      if (newQuantity < 0) {
+        throw new Error("Quantità insufficiente.");
+      }
+
+      transaction.update(materialRef, {
+        quantity: newQuantity,
+        updatedAt: serverTimestamp()
+      });
+
+      transaction.set(movementRef, {
+        materialId: m.id,
+        name: current.name || m.name,
+        code: current.code || "",
+        type: delta > 0 ? "Carico" : "Scarico",
+        amount,
+        unit: current.unit || "",
+        container: current.container || "",
+        createdAt: serverTimestamp()
+      });
     });
 
-    await addDoc(collection(db, "movements"), {
-      materialId: m.id,
-      name: m.name,
-      code: m.code || "",
-      type: delta > 0 ? "Carico" : "Scarico",
-      amount,
-      unit: m.unit || "",
-      container: m.container || "",
-      createdAt: serverTimestamp()
-    });
+    status.textContent =
+      (delta > 0 ? "Carico" : "Scarico") +
+      " registrato correttamente.";
   } catch (e) {
     alert("Movimento non riuscito: " + e.message);
   }
 }
 
+/* ELIMINAZIONE */
+
 async function remove(m) {
-  if (confirm("Eliminare " + m.name + "?")) {
+  if (!confirm("Eliminare " + m.name + "?")) return;
+
+  try {
     await deleteDoc(doc(db, "materials", m.id));
+  } catch (e) {
+    alert("Eliminazione non riuscita: " + e.message);
   }
 }
+
+/* RICERCA */
 
 function matchesTerm(m, term) {
   const searchable = [
@@ -481,6 +606,8 @@ function matchesTerm(m, term) {
   return searchable.includes(term);
 }
 
+/* VISUALIZZAZIONE MATERIALI E CONTAINER */
+
 function render() {
   const term = val("search").toLocaleLowerCase("it");
 
@@ -497,25 +624,42 @@ function render() {
       <div class="item">
         <b>${esc(m.name)}</b>
         <span class="pill">${esc(m.container || "")}</span>
+
         <div>
           ${esc(m.code || "")} ·
           ${Number(m.quantity || 0)}
           ${esc(m.unit || "")}
         </div>
+
         <div class="muted">
           Zona ${esc(m.zone || "—")} ·
           Scatola ${esc(m.box || "—")} ·
           Scaffale ${esc(m.shelf || "—")} ·
           Ripiano ${esc(m.rack || "—")}
         </div>
-        ${m.notes
-          ? `<div class="muted">Note: ${esc(m.notes)}</div>`
-          : ""}
+
+        ${
+          m.notes
+            ? `<div class="muted">Note: ${esc(m.notes)}</div>`
+            : ""
+        }
+
         <div class="row">
-          <button data-act="in" data-id="${esc(m.id)}">CARICO</button>
-          <button data-act="out" data-id="${esc(m.id)}">SCARICO</button>
-          <button data-act="edit" data-id="${esc(m.id)}">MODIFICA</button>
-          <button data-act="del" data-id="${esc(m.id)}">ELIMINA</button>
+          <button data-act="in" data-id="${esc(m.id)}">
+            CARICO
+          </button>
+
+          <button data-act="out" data-id="${esc(m.id)}">
+            SCARICO
+          </button>
+
+          <button data-act="edit" data-id="${esc(m.id)}">
+            MODIFICA
+          </button>
+
+          <button data-act="del" data-id="${esc(m.id)}">
+            ELIMINA
+          </button>
         </div>
       </div>
     `).join("")
@@ -527,47 +671,62 @@ function render() {
   $("containers").innerHTML = Array.from(
     { length: 8 },
     (_, i) => {
-      const c = "C" + String(i + 1).padStart(2, "0");
+      const container =
+        "C" + String(i + 1).padStart(2, "0");
 
-      const n = materials.filter(
-        m => m.container === c
+      const count = materials.filter(
+        m => m.container === container
       ).length;
 
       const foundCount = term
         ? materials.filter(
-            m => m.container === c && matchesTerm(m, term)
+            m =>
+              m.container === container &&
+              matchesTerm(m, term)
           ).length
         : 0;
 
-      const active = selectedContainer === c ? " active" : "";
+      const active =
+        selectedContainer === container ? " active" : "";
 
       return `
         <div
           class="container-card${active}"
-          data-container="${c}"
+          data-container="${container}"
           role="button"
           tabindex="0"
-          aria-label="Apri il container ${c}"
+          aria-label="Apri il container ${container}"
         >
           <div class="container-art" aria-hidden="true"></div>
-          <b>${c}</b>
+
+          <b>${container}</b>
+
           ${
             foundCount > 0
               ? `<div class="found-label">TROVATO · ${foundCount}</div>`
               : ""
           }
-          <div>${n} material${n === 1 ? "e" : "i"}</div>
-          <button type="button" data-container="${c}">APRI</button>
+
+          <div>
+            ${count} material${count === 1 ? "e" : "i"}
+          </div>
+
+          <button type="button" data-container="${container}">
+            APRI
+          </button>
         </div>
       `;
     }
   ).join("");
 }
 
+/* APERTURA CONTAINER */
+
 function openContainer(container) {
   selectedContainer = container;
   containerView = true;
   historyVisible = false;
+
   $("search").value = "";
 
   const searchSection = $("search").parentElement;
@@ -597,32 +756,50 @@ function openContainer(container) {
     const add = document.createElement("button");
     add.className = "container-action add";
     add.textContent = "＋ AGGIUNGI MATERIALE";
+
     add.onclick = () => {
       $("container").value = selectedContainer;
       $("formtitle").textContent = "Aggiungi materiale";
       $("docid").value = "";
+
       clearForm();
+
       $("container").value = selectedContainer;
+
       formSection.classList.remove("hidden");
-      formSection.scrollIntoView({ behavior:"smooth", block:"start" });
+
+      formSection.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
     };
 
     const history = document.createElement("button");
     history.className = "container-action history";
     history.textContent = "STORICO MOVIMENTI";
+
     history.onclick = () => {
       historyVisible = !historyVisible;
-      movementsSection.classList.toggle("hidden", !historyVisible);
+
+      movementsSection.classList.toggle(
+        "hidden",
+        !historyVisible
+      );
+
       if (historyVisible) {
         movementsSection.scrollIntoView({
-          behavior:"smooth",
-          block:"start"
+          behavior: "smooth",
+          block: "start"
         });
       }
     };
 
     toolbar.append(back, add, history);
-    materialsSection.insertBefore(toolbar, $("materials"));
+
+    materialsSection.insertBefore(
+      toolbar,
+      $("materials")
+    );
   }
 
   materialsSection.querySelector("h2").textContent =
@@ -631,10 +808,12 @@ function openContainer(container) {
   render();
 
   materialsSection.scrollIntoView({
-    behavior:"smooth",
-    block:"start"
+    behavior: "smooth",
+    block: "start"
   });
 }
+
+/* CHIUSURA CONTAINER */
 
 function closeContainer() {
   containerView = false;
@@ -646,7 +825,9 @@ function closeContainer() {
   $("movements").parentElement.classList.remove("hidden");
   $("export").parentElement.classList.remove("hidden");
 
-  if ($("containerToolbar")) $("containerToolbar").remove();
+  if ($("containerToolbar")) {
+    $("containerToolbar").remove();
+  }
 
   selectedContainer = "";
 
@@ -656,10 +837,12 @@ function closeContainer() {
   render();
 
   $("containers").scrollIntoView({
-    behavior:"smooth",
-    block:"start"
+    behavior: "smooth",
+    block: "start"
   });
 }
+
+/* STORICO MOVIMENTI */
 
 function renderMovements() {
   $("movements").innerHTML = movements.length
@@ -669,31 +852,43 @@ function renderMovements() {
         ${esc(m.name || "")} ·
         ${m.amount ?? ""}
         ${esc(m.unit || "")}
-        <span class="muted">${esc(m.container || "")}</span>
+
+        <span class="muted">
+          ${esc(m.container || "")}
+        </span>
       </div>
     `).join("")
     : "Nessun movimento registrato.";
 }
 
-$("materials").onclick = e => {
-  const b = e.target.closest("button[data-act]");
-  if (!b) return;
+/* AZIONI SUI MATERIALI */
 
-  const m = materials.find(x => x.id === b.dataset.id);
-  if (!m) return;
+$("materials").onclick = e => {
+  const button = e.target.closest("button[data-act]");
+
+  if (!button) return;
+
+  const material = materials.find(
+    x => x.id === button.dataset.id
+  );
+
+  if (!material) return;
 
   const actions = {
-    in: () => move(m, 1),
-    out: () => move(m, -1),
-    edit: () => edit(m),
-    del: () => remove(m)
+    in: () => move(material, 1),
+    out: () => move(material, -1),
+    edit: () => edit(material),
+    del: () => remove(material)
   };
 
-  actions[b.dataset.act]?.();
+  actions[button.dataset.act]?.();
 };
+
+/* AZIONI SUI CONTAINER */
 
 $("containers").onclick = e => {
   const card = e.target.closest("[data-container]");
+
   if (!card) return;
 
   openContainer(card.dataset.container);
@@ -703,26 +898,33 @@ $("containers").onkeydown = e => {
   if (e.key !== "Enter" && e.key !== " ") return;
 
   const card = e.target.closest(".container-card");
+
   if (!card) return;
 
   e.preventDefault();
+
   openContainer(card.dataset.container);
 };
 
+/* RICERCA MATERIALI */
+
 function runSearch() {
   selectedContainer = "";
+
   render();
 
   $("materials").scrollIntoView({
-    behavior:"smooth",
-    block:"start"
+    behavior: "smooth",
+    block: "start"
   });
 }
 
 $("searchBtn").onclick = runSearch;
 
 $("search").addEventListener("keydown", e => {
-  if (e.key === "Enter") runSearch();
+  if (e.key === "Enter") {
+    runSearch();
+  }
 });
 
 $("clearSearch").onclick = () => {
@@ -733,36 +935,58 @@ $("clearSearch").onclick = () => {
 
 $("search").oninput = render;
 
+/* BLOCCO MAGAZZINO */
+
 $("logout").onclick = async () => {
-  if (confirm("Bloccare il magazzino su questo dispositivo?")) {
+  if (
+    confirm("Bloccare il magazzino su questo dispositivo?")
+  ) {
     show("pin");
+
     $("pin1").value = "";
-    $("pinmsg").textContent = "Inserisci il PIN per rientrare.";
+    $("pinmsg").textContent =
+      "Inserisci il PIN per rientrare.";
+
     $("pin2").classList.add("hidden");
     $("pintitle").textContent = "Inserisci il PIN";
   }
 };
 
+/* BACKUP JSON */
+
 $("export").onclick = () => {
+  const backup = {
+    materials,
+    movements,
+    exportedAt: new Date().toISOString()
+  };
+
   const blob = new Blob(
-    [JSON.stringify({ materials, movements }, null, 2)],
-    { type:"application/json" }
+    [JSON.stringify(backup, null, 2)],
+    { type: "application/json" }
   );
 
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "backup-magazzino.json";
-  a.click();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
 
-  URL.revokeObjectURL(a.href);
+  link.href = url;
+  link.download = "backup-magazzino.json";
+
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+
+  URL.revokeObjectURL(url);
 };
 
-function esc(v) {
-  return String(v ?? "").replace(/[&<>"']/g, c => ({
-    "&":"&amp;",
-    "<":"&lt;",
-    ">":"&gt;",
-    '"':"&quot;",
-    "'":"&#39;"
-  }[c]));
+/* PROTEZIONE TESTI HTML */
+
+function esc(value) {
+  return String(value ?? "").replace(/[&<>"']/g, character => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  }[character]));
 }
