@@ -6,447 +6,85 @@
 <meta name="theme-color" content="#263b32">
 <title>Il mio magazzino</title>
 <style>
-:root{
- --ink:#172820;--forest:#263b32;--forest2:#385448;--leaf:#8fa77c;
- --paper:#edf0e8;--panel:#fbfcf8;--line:#d7ded2;--muted:#718075;
- --gold:#d5b875;--red:#b84d48;--green:#367d58;
- --shadow:0 12px 28px #18271c18;
-}
-*{box-sizing:border-box}
-html{scroll-behavior:smooth}
-body{
- margin:0;
- background:radial-gradient(ellipse at 50% 0,#f8faf4 0,#e9eee5 65%,#e3e9df 100%);
- color:var(--ink);
- font-family:Inter,system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
- padding-bottom:calc(84px + env(safe-area-inset-bottom))
-}
-.hidden{display:none!important}
-header{
- position:relative;overflow:hidden;
- padding:25px 20px 23px;color:#f7f8f2;
- background:linear-gradient(125deg,#405d4c,#1d3028 78%);
- box-shadow:0 8px 25px #14251d30
-}
-header:after{
- content:"";position:absolute;width:210px;height:210px;
- border:1px solid #ffffff18;border-radius:50%;
- right:-65px;top:-115px;
- box-shadow:0 0 0 22px #ffffff08,0 0 0 45px #ffffff06
-}
-header h1{
- position:relative;z-index:1;margin:0;
- font-size:clamp(22px,5vw,30px);
- font-weight:850;letter-spacing:1.7px
-}
-header p{
- position:relative;z-index:1;margin:7px 0 0;
- color:#d4dfd3;font-size:13px;letter-spacing:.4px
-}
-main{width:min(100%,980px);margin:auto;padding:17px 15px}
-#status{font-size:13px;color:var(--muted);padding:4px 3px}
-section,.panel{
- background:linear-gradient(155deg,#fff,#f8faf5);
- border:1px solid #fff;border-radius:19px;
- padding:19px;margin:13px 0;
- box-shadow:var(--shadow);outline:1px solid #dce3d8
-}
-h2{
- margin:0 0 16px;color:var(--forest);
- font-size:19px;font-weight:800;letter-spacing:.15px
-}
-h3{margin:0 0 12px}
-label{
- display:block;margin:9px 0 5px;
- font-size:13px;font-weight:750;color:#425449
-}
-input,select,textarea{
- display:block;width:100%;min-height:48px;
- margin:5px 0 12px;padding:12px 13px;
- border:1px solid #d5ded3;border-radius:12px;
- background:#f9fbf7;color:var(--ink);
- font:inherit;font-size:16px;
- box-shadow:inset 0 2px 4px #1c30200b
-}
-input:focus,select:focus,textarea:focus{
- outline:2px solid #9aaf8c;border-color:transparent
-}
-textarea{min-height:82px;resize:vertical}
-button{
- min-height:46px;padding:11px 16px;
- border:1px solid #496556;border-radius:12px;
- background:linear-gradient(180deg,#526e5d,#304a3c);
- color:#fff;font:inherit;font-size:14px;
- font-weight:800;letter-spacing:.35px;
- box-shadow:0 4px 0 #1c3027,0 7px 12px #15291e20;
- cursor:pointer;touch-action:manipulation;
- transition:transform .12s,box-shadow .12s,filter .12s
-}
-button:active{
- transform:translateY(3px);
- box-shadow:0 1px 0 #1c3027,0 3px 7px #15291e20;
- filter:brightness(.98)
-}
-button.secondary{
- background:linear-gradient(#f5f7f1,#dfe6dc);
- color:#30483a;border-color:#c5d0c3;
- box-shadow:0 4px 0 #c4cec1,0 7px 12px #15291e12
-}
-button.danger{
- background:linear-gradient(#c96860,#a43d3a);
- border-color:#91413b;box-shadow:0 4px 0 #79302d
-}
-button.success{
- background:linear-gradient(#4e9a70,#2d704e);
- border-color:#2d704e;box-shadow:0 4px 0 #205238
-}
-.actions{display:flex;gap:10px;flex-wrap:wrap}
-.actions button{flex:1}
-.search-area{border-top:4px solid var(--gold)}
-.search-buttons{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.search-buttons button{min-height:48px}
-#containers{
- display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
- gap:17px 13px
-}
-#containers>*{min-width:0}
-.container-card{
- position:relative;min-height:190px;padding:15px 12px 13px;
- border:1px solid #182b23;border-radius:13px;
- background:linear-gradient(150deg,#62796b 0%,#344e40 48%,#22382d 100%);
- color:#f7f8f2;text-align:center;cursor:pointer;
- display:flex;flex-direction:column;align-items:center;
- justify-content:center;gap:9px;
- box-shadow:inset 0 2px 2px #ffffff4d,
- inset 0 -8px 13px #14251c70,
- 0 6px 0 #17291f,0 12px 17px #17291f2e;
- transition:transform .15s,box-shadow .15s
-}
-.container-card:active{
- transform:translateY(4px);
- box-shadow:inset 0 2px 2px #ffffff35,
- 0 2px 0 #17291f,0 5px 8px #17291f25
-}
-.container-card b{font-size:21px;letter-spacing:2px;color:#fff}
-.container-art{
- position:relative;width:100%;max-width:165px;height:76px;
- border:2px solid #192c23;border-radius:3px;overflow:hidden;
- background:repeating-linear-gradient(
-  90deg,#9aa99b 0 5px,#657e6d 6px 9px,#405b4b 10px 13px
- );
- box-shadow:inset 0 5px 9px #ffffff55,
- inset 0 -8px 10px #10231966,5px 6px 0 #17291f;
- transform:perspective(260px) rotateY(-8deg)
-}
-.container-art:before{
- content:"";position:absolute;inset:0;
- background:repeating-linear-gradient(
-  90deg,transparent 0 17px,#1c302a88 18px 20px,
-  #ffffff35 21px 22px,transparent 23px 25px
- )
-}
-.container-art:after{
- content:"";position:absolute;top:5px;bottom:5px;
- left:9px;right:9px;
- border-left:3px solid #20372b99;
- border-right:3px solid #20372b99;
- box-shadow:inset 5px 0 0 #ffffff18,inset -5px 0 0 #ffffff18
-}
-.container-card>div:not(.container-art){
- color:#e0e9df;font-size:13px
-}
-.container-card .found-label{
- color:#f4d994!important;font-weight:850
-}
-.container-card button{
- width:100%;min-height:37px;padding:7px;
- background:linear-gradient(#e8eddf,#cbd6c7);
- color:#2d4436;border:1px solid #b7c5b6;
- box-shadow:0 3px 0 #1b3025,0 5px 8px #10231955;
- font-size:12px
-}
-#materials{display:grid;gap:11px}
-.material-card,.material,.item{
- padding:14px;border:1px solid var(--line);
- border-radius:14px;background:#fff;
- box-shadow:0 3px 9px #1b30200b;overflow-wrap:anywhere
-}
-#resultcount{margin:5px 0 12px;color:var(--muted);font-size:13px}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
-#auth,#app{margin-top:12px}
-#auth{max-width:520px;margin:18px auto}
-#pin{max-width:520px;margin:18px auto}
-#logout{
- background:linear-gradient(#f5f7f1,#dfe6dc);
- color:#30483a;border-color:#c5d0c3;
- box-shadow:0 4px 0 #c4cec1
-}
-#movements{overflow-wrap:anywhere}
-.row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
-.row button{flex:1;min-width:90px}
-.row button[data-act="in"]{background:linear-gradient(#4e9a70,#2d704e)}
-.row button[data-act="out"]{background:linear-gradient(#c96860,#a43d3a)}
-.row button[data-act="edit"]{
- background:linear-gradient(#edf2ed,#dce5dc);
- color:#294332;border-color:#c5d0c3;
- box-shadow:0 3px 0 #c4cec1
-}
-.row button[data-act="del"]{background:linear-gradient(#bd625c,#8e3432)}
-.pill{
- display:inline-block;background:#e8eee5;color:#385342;
- padding:4px 9px;border-radius:30px;font-size:12px;font-weight:750
-}
-.muted{color:var(--muted);font-size:13px;margin-top:6px}
-.container-back,.container-action{width:100%;margin-bottom:11px}
-.container-back{
- background:linear-gradient(#f5f7f1,#dfe6dc);
- color:#30483a;border-color:#c5d0c3;
- box-shadow:0 4px 0 #c4cec1
-}
-.container-action.add{background:linear-gradient(#4e9a70,#2d704e)}
-.container-action.history{background:linear-gradient(#557d8c,#345767)}
-.container-heading{font-size:22px;font-weight:800;color:var(--forest);margin:8px 0}
-#bottom-nav{
- display:none;position:fixed;left:0;right:0;bottom:0;
- z-index:9999;padding:9px 9px calc(9px + env(safe-area-inset-bottom));
- background:linear-gradient(135deg,#344f40,#1c3027);
- box-shadow:0 -5px 22px #10231935;
- grid-template-columns:repeat(4,1fr);gap:8px
-}
-#bottom-nav button{
- min-height:48px;padding:7px 3px;
- border:1px solid #789080;border-radius:11px;
- background:linear-gradient(#526d5c,#304a3b);
- color:white;font-size:11px;box-shadow:0 3px 0 #13251c;
- letter-spacing:.2px
-}
-#bottom-nav button.active{
- background:linear-gradient(#e5d29c,#c6ad6b);
- color:#29382d;border-color:#e9d9ae;
- box-shadow:0 3px 0 #8c7848
-}
-@media(min-width:700px){
- main{padding:22px 24px}
- #containers{grid-template-columns:repeat(4,minmax(0,1fr));gap:19px}
- .container-card{min-height:205px}
- section,.panel{padding:22px;margin:16px 0}
-}
-@media(max-width:480px){
- main{padding:10px}
- header{padding:22px 16px}
- section,.panel{padding:15px;border-radius:16px}
- .form-grid{grid-template-columns:1fr}
- .container-card{min-height:170px;padding:12px 9px}
- .container-art{height:62px}
- button{padding:10px 12px}
-}
+:root{--ink:#172820;--forest:#263b32;--paper:#edf0e8;--panel:#fbfcf8;--line:#d7ded2;--muted:#718075;--gold:#d5b875;--shadow:0 12px 28px #18271c18}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% 0,#f8faf4,#e3e9df);color:var(--ink);font-family:Inter,system-ui,-apple-system,"Segoe UI",Arial,sans-serif;padding-bottom:calc(86px + env(safe-area-inset-bottom))}
+.hidden{display:none!important}header{padding:25px 20px 23px;color:#f7f8f2;background:linear-gradient(125deg,#405d4c,#1d3028);box-shadow:0 8px 25px #14251d30}header h1{margin:0;font-size:clamp(22px,5vw,30px);font-weight:850;letter-spacing:1.7px}header p{margin:7px 0 0;color:#d4dfd3;font-size:13px}
+main{width:min(100%,980px);margin:auto;padding:17px 15px}#status{font-size:13px;color:var(--muted);padding:4px 3px}
+section,.panel{background:linear-gradient(155deg,#fff,#f8faf5);border:1px solid #fff;border-radius:19px;padding:19px;margin:13px 0;box-shadow:var(--shadow);outline:1px solid #dce3d8}
+h2{margin:0 0 16px;color:var(--forest);font-size:19px;font-weight:800}h3{margin:0 0 12px}
+label{display:block;margin:9px 0 5px;font-size:13px;font-weight:750;color:#425449}
+input,select,textarea{display:block;width:100%;min-height:48px;margin:5px 0 12px;padding:12px 13px;border:1px solid #d5ded3;border-radius:12px;background:#f9fbf7;color:var(--ink);font:inherit;font-size:16px;box-shadow:inset 0 2px 4px #1c30200b}
+textarea{min-height:82px;resize:vertical}button{min-height:46px;padding:11px 16px;border:1px solid #496556;border-radius:12px;background:linear-gradient(180deg,#526e5d,#304a3c);color:#fff;font:inherit;font-size:14px;font-weight:800;letter-spacing:.35px;box-shadow:0 4px 0 #1c3027,0 7px 12px #15291e20;cursor:pointer;touch-action:manipulation;transition:transform .12s,box-shadow .12s}
+button:active{transform:translateY(3px);box-shadow:0 1px 0 #1c3027,0 3px 7px #15291e20}
+button.secondary{background:linear-gradient(#f5f7f1,#dfe6dc);color:#30483a;border-color:#c5d0c3;box-shadow:0 4px 0 #c4cec1}
+button.danger{background:linear-gradient(#c96860,#a43d3a);border-color:#91413b;box-shadow:0 4px 0 #79302d}button.success{background:linear-gradient(#4e9a70,#2d704e);border-color:#2d704e;box-shadow:0 4px 0 #205238}
+.actions{display:flex;gap:10px;flex-wrap:wrap}.actions button{flex:1}.search-buttons{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#containers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:17px 13px}#containers>*{min-width:0}
+.container-card{position:relative;min-height:190px;padding:15px 12px 13px;border:1px solid #182b23;border-radius:13px;background:linear-gradient(150deg,#62796b,#344e40 48%,#22382d);color:#f7f8f2;text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;box-shadow:inset 0 2px 2px #ffffff4d,inset 0 -8px 13px #14251c70,0 6px 0 #17291f,0 12px 17px #17291f2e}
+.container-card:active{transform:translateY(4px)}.container-card b{font-size:21px;letter-spacing:2px;color:#fff}
+.container-art{position:relative;width:100%;max-width:165px;height:76px;border:2px solid #192c23;border-radius:3px;overflow:hidden;background:repeating-linear-gradient(90deg,#9aa99b 0 5px,#657e6d 6px 9px,#405b4b 10px 13px);box-shadow:inset 0 5px 9px #ffffff55,inset 0 -8px 10px #10231966,5px 6px 0 #17291f;transform:perspective(260px) rotateY(-8deg)}
+.container-art:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 17px,#1c302a88 18px 20px,#ffffff35 21px 22px,transparent 23px 25px)}
+.container-art:after{content:"";position:absolute;top:5px;bottom:5px;left:9px;right:9px;border-left:3px solid #20372b99;border-right:3px solid #20372b99;box-shadow:inset 5px 0 0 #ffffff18,inset -5px 0 0 #ffffff18}
+.container-card>div:not(.container-art){color:#e0e9df;font-size:13px}.found-label{color:#f4d994!important;font-weight:850}
+.container-card button{width:100%;min-height:37px;padding:7px;background:linear-gradient(#e8eddf,#cbd6c7);color:#2d4436;border:1px solid #b7c5b6;box-shadow:0 3px 0 #1b3025;font-size:12px}
+#materials{display:grid;gap:11px}.item{padding:14px;border:1px solid var(--line);border-radius:14px;background:#fff;box-shadow:0 3px 9px #1b30200b;overflow-wrap:anywhere}
+#resultcount{margin:5px 0 12px;color:var(--muted);font-size:13px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+#auth,#pin{max-width:520px;margin:18px auto}#logout{background:linear-gradient(#f5f7f1,#dfe6dc);color:#30483a;border-color:#c5d0c3;box-shadow:0 4px 0 #c4cec1}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.row button{flex:1;min-width:90px}.row button[data-act="in"]{background:linear-gradient(#4e9a70,#2d704e)}.row button[data-act="out"],.row button[data-act="del"]{background:linear-gradient(#bd625c,#8e3432)}.row button[data-act="edit"]{background:linear-gradient(#edf2ed,#dce5dc);color:#294332;border-color:#c5d0c3;box-shadow:0 3px 0 #c4cec1}
+.pill{display:inline-block;background:#e8eee5;color:#385342;padding:4px 9px;border-radius:30px;font-size:12px;font-weight:750}.muted{color:var(--muted);font-size:13px;margin-top:6px}
+.container-back,.container-action{width:100%;margin-bottom:11px}.container-back{background:linear-gradient(#f5f7f1,#dfe6dc);color:#30483a;border-color:#c5d0c3;box-shadow:0 4px 0 #c4cec1}
+.container-action.add{background:linear-gradient(#4e9a70,#2d704e)}.container-action.history{background:linear-gradient(#557d8c,#345767)}.container-heading{font-size:22px;font-weight:800;color:var(--forest);margin:8px 0}
+#bottom-nav{display:none;position:fixed;left:0;right:0;bottom:0;z-index:9999;padding:9px 9px calc(9px + env(safe-area-inset-bottom));background:linear-gradient(135deg,#344f40,#1c3027);box-shadow:0 -5px 22px #10231935;grid-template-columns:repeat(4,1fr);gap:8px}
+#bottom-nav button{min-height:48px;padding:7px 3px;border:1px solid #789080;border-radius:11px;background:linear-gradient(#526d5c,#304a3b);color:white;font-size:11px;box-shadow:0 3px 0 #13251c;letter-spacing:.2px}
+#bottom-nav button.active{background:linear-gradient(#e5d29c,#c6ad6b);color:#29382d;border-color:#e9d9ae;box-shadow:0 3px 0 #8c7848}
+@media(min-width:700px){main{padding:22px 24px}#containers{grid-template-columns:repeat(4,minmax(0,1fr));gap:19px}.container-card{min-height:205px}section,.panel{padding:22px;margin:16px 0}}
+@media(max-width:480px){main{padding:10px}header{padding:22px 16px}section,.panel{padding:15px;border-radius:16px}.form-grid{grid-template-columns:1fr}.container-card{min-height:170px;padding:12px 9px}.container-art{height:62px}button{padding:10px 12px}}
 </style>
 </head>
 <body>
-
-<header>
- <h1>IL MIO MAGAZZINO</h1>
- <p>Gestione materiali e container</p>
-</header>
-
+<header><h1>IL MIO MAGAZZINO</h1><p>Gestione materiali e container</p></header>
 <main>
 <div id="status"></div>
-
 <section id="auth">
- <h2>Accesso</h2>
- <label for="email">Email</label>
- <input id="email" type="email" autocomplete="username">
- <label for="password">Password</label>
- <input id="password" type="password" autocomplete="current-password">
- <button id="login" style="width:100%">ACCEDI</button>
- <div id="authmsg"></div>
+<h2>Accesso</h2><label for="email">Email</label><input id="email" type="email" autocomplete="username">
+<label for="password">Password</label><input id="password" type="password" autocomplete="current-password">
+<button id="login" style="width:100%">ACCEDI</button><div id="authmsg"></div>
 </section>
-
 <section id="pin" class="hidden">
- <h2 id="pintitle">PIN</h2>
- <div id="pinhelp"></div>
- <input id="pin1" type="password" inputmode="numeric" placeholder="Inserisci PIN">
- <input id="pin2" type="password" inputmode="numeric" placeholder="Ripeti PIN">
- <button id="pinbtn" style="width:100%">CONFERMA PIN</button>
- <div id="pinmsg"></div>
+<h2 id="pintitle">PIN</h2><div id="pinhelp"></div>
+<input id="pin1" type="password" inputmode="numeric" placeholder="Inserisci PIN">
+<input id="pin2" type="password" inputmode="numeric" placeholder="Ripeti PIN">
+<button id="pinbtn" style="width:100%">CONFERMA PIN</button><div id="pinmsg"></div>
 </section>
-
 <div id="app" class="hidden">
-
-<section>
- <div class="actions">
-  <button id="logout" class="secondary">ESCI</button>
- </div>
+<section id="logout-section"><div class="actions"><button id="logout" class="secondary">ESCI / BLOCCA</button></div></section>
+<section id="search-section" class="search-area">
+<h2>Cerca materiale</h2><input id="search" type="search" placeholder="Nome, codice, container...">
+<div class="search-buttons"><button id="searchBtn">CERCA</button><button id="clearSearch" class="secondary">PULISCI</button></div>
 </section>
-
-<section class="search-area">
- <h2>Cerca materiale</h2>
- <input id="search" type="search" placeholder="Nome, codice, container...">
- <div class="search-buttons">
-  <button id="searchBtn">CERCA</button>
-  <button id="clearSearch" class="secondary">PULISCI</button>
- </div>
+<section id="containers-section"><h2>I tuoi container</h2><div id="containers"></div></section>
+<section id="form-section">
+<h2 id="formtitle">Materiale</h2><input id="docid" type="hidden">
+<label for="name">Nome materiale</label><input id="name" placeholder="Nome materiale">
+<label for="code">Codice</label><input id="code" placeholder="Codice">
+<div class="form-grid"><div><label for="qty">Quantità</label><input id="qty" type="number" step="any" placeholder="0"></div><div><label for="unit">Unità</label><input id="unit" placeholder="Pezzi, kg, metri..."></div></div>
+<label for="container">Container</label><select id="container">
+<option value="C01">C01</option><option value="C02">C02</option><option value="C03">C03</option><option value="C04">C04</option><option value="C05">C05</option><option value="C06">C06</option><option value="C07">C07</option><option value="C08">C08</option>
+</select>
+<div class="form-grid"><div><label for="zone">Zona</label><input id="zone"></div><div><label for="box">Scatola</label><input id="box"></div><div><label for="shelf">Scaffale</label><input id="shelf"></div><div><label for="rack">Ripiano</label><input id="rack"></div></div>
+<label for="notes">Note</label><textarea id="notes"></textarea>
+<div class="actions"><button id="save" class="success">SALVA</button><button id="cancel" class="secondary hidden">ANNULLA</button></div>
 </section>
-
-<section>
- <h2>I tuoi container</h2>
- <div id="containers"></div>
-</section>
-
-<section>
- <h2 id="formtitle">Materiale</h2>
- <input id="docid" type="hidden">
-
- <label for="name">Nome materiale</label>
- <input id="name" placeholder="Nome materiale">
-
- <label for="code">Codice</label>
- <input id="code" placeholder="Codice">
-
- <div class="form-grid">
-  <div>
-   <label for="qty">Quantità</label>
-   <input id="qty" type="number" step="any" placeholder="0">
-  </div>
-  <div>
-   <label for="unit">Unità</label>
-   <input id="unit" placeholder="Pezzi, kg, metri...">
-  </div>
- </div>
-
- <label for="container">Container</label>
- <select id="container">
-  <option value="C01">C01</option>
-  <option value="C02">C02</option>
-  <option value="C03">C03</option>
-  <option value="C04">C04</option>
-  <option value="C05">C05</option>
-  <option value="C06">C06</option>
-  <option value="C07">C07</option>
-  <option value="C08">C08</option>
- </select>
-
- <div class="form-grid">
-  <div><label for="zone">Zona</label><input id="zone"></div>
-  <div><label for="box">Scatola</label><input id="box"></div>
-  <div><label for="shelf">Scaffale</label><input id="shelf"></div>
-  <div><label for="rack">Ripiano</label><input id="rack"></div>
- </div>
-
- <label for="notes">Note</label>
- <textarea id="notes"></textarea>
-
- <div class="actions">
-  <button id="save" class="success">SALVA</button>
-  <button id="cancel" class="secondary">ANNULLA</button>
- </div>
-</section>
-
-<section>
- <h2>Materiali</h2>
- <div id="resultcount"></div>
- <div id="materials"></div>
-</section>
-
-<section>
- <h2>Movimenti</h2>
- <div id="movements"></div>
-</section>
-
-<section>
- <h2>Backup</h2>
- <button id="export" style="width:100%">ESPORTA DATI JSON</button>
-</section>
-
+<section id="materials-section"><h2 id="materials-title">Materiali</h2><div id="resultcount"></div><div id="materials"></div></section>
+<section id="movements-section"><h2>Movimenti</h2><div id="movements"></div></section>
+<section id="backup-section"><h2>Backup</h2><button id="export" style="width:100%">ESPORTA DATI JSON</button></section>
 </div>
 </main>
-
 <nav id="bottom-nav" aria-label="Navigazione">
- <button type="button" data-go="home" class="active">CONTAINER</button>
- <button type="button" data-go="history">STORICO</button>
- <button type="button" data-go="backup">BACKUP</button>
- <button type="button" data-go="top">↑ INIZIO</button>
+<button type="button" data-go="home" class="active">HOME</button>
+<button type="button" data-go="materials">MATERIALI</button>
+<button type="button" data-go="history">STORICO</button>
+<button type="button" data-go="backup">BACKUP</button>
 </nav>
-
 <script type="module" src="app.js"></script>
-
-<script>
-(function(){
- const nav=document.getElementById('bottom-nav');
- const app=document.getElementById('app');
-
- const sections=()=>Array.from(
-  app.querySelectorAll(':scope > section')
- );
-
- function active(button){
-  nav.querySelectorAll('button').forEach(b=>{
-   b.classList.toggle('active',b===button);
-  });
- }
-
- function visible(){
-  nav.style.display=
-   app&&!app.classList.contains('hidden')?'grid':'none';
- }
-
- if(app){
-  new MutationObserver(visible).observe(app,{
-   attributes:true,
-   attributeFilter:['class']
-  });
- }
-
- visible();
-
- nav.addEventListener('click',e=>{
-  const b=e.target.closest('button[data-go]');
-  if(!b)return;
-
-  const dest=b.dataset.go;
-  active(b);
-
-  if(dest==='top'){
-   window.scrollTo({top:0,behavior:'smooth'});
-   return;
-  }
-
-  if(dest==='home'){
-   document.querySelector(
-    '#containerToolbar .container-back'
-   )?.click();
-
-   sections().forEach(s=>s.classList.remove('hidden'));
-   window.scrollTo({top:0,behavior:'smooth'});
-   return;
-  }
-
-  if(dest==='history'||dest==='backup'){
-
-   if(document.querySelector(
-    '#containerToolbar .container-back'
-   )){
-    document.querySelector(
-     '#containerToolbar .container-back'
-    ).click();
-   }
-
-   const target=dest==='history'
-    ?document.getElementById('movements')?.parentElement
-    :document.getElementById('export')?.parentElement;
-
-   sections().forEach(s=>{
-    s.classList.toggle('hidden',s!==target);
-   });
-
-   target?.scrollIntoView({
-    behavior:'smooth',
-    block:'start'
-   });
-  }
- });
-})();
-</script>
-
-</body>
-</html>
+</body></html>
